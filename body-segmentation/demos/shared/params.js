@@ -15,25 +15,33 @@
  * =============================================================================
  */
 import * as bodySegmentation from '@tensorflow-models/body-segmentation';
-import * as poseDetection from '@tensorflow-models/pose-detection';
 
 export const DEFAULT_LINE_WIDTH = 2;
 export const DEFAULT_RADIUS = 4;
 
 export const VIDEO_SIZE = {
-  '1280 X 960': {width: 1280, height: 960},
+  // '1280 X 960': {width: 1280, height: 960},
   '640 X 480': {width: 640, height: 480},
   '640 X 360': {width: 640, height: 360},
   '360 X 270': {width: 360, height: 270}
 };
 export const STATE = {
-  camera: {targetFPS: 60, sizeOption: '1280 X 960', cameraSelector: ''},
-  backend: '',
+  camera: {targetFPS: 60, sizeOption: '640 X 360', cameraSelector: ''},
+  backend: {
+    spaceX: 0,
+    spaceY: 0,
+    row:1,
+    offsetY: 0,
+    offsetX: 0,
+    count:10,
+    scale: 1,
+    fontSize:10
+  },
   flags: {},
   modelConfig: {},
   visualization: {
     foregroundThreshold: 0.5,
-    maskOpacity: 0.7,
+    maskOpacity: 1,
     maskBlur: 0,
     pixelCellWidth: 10,
     backgroundBlur: 3,
