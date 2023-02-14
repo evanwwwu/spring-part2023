@@ -2,7 +2,7 @@
 import { STATE } from './shared/params';
 
 import { setupDatGui,setControllers, getController} from './option_panel';
-
+import Easing from './easing'
 
 const videoElement = document.getElementsByClassName('input_video')[0];
 const canvasElement = document.getElementsByClassName('output_canvas')[0];
@@ -11,7 +11,10 @@ const bgMusic = document.getElementById('bgMusic');
 const canvasCtx = canvasElement.getContext('2d');
 const maskCtx = maskElement.getContext('2d');
 
-let matrixFrame=[];
+let matrixFrame = [];
+let step = 0;
+let start_time;
+let end_time = null;
 let setting = {
     default: {
         scale: 0.329,
@@ -38,14 +41,10 @@ function onResults(results) {
     // console.log("results:",results.image)
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
     canvasCtx.drawImage(results.image, 0, 0,
                         canvasElement.width, canvasElement.height);
                         
-    // // Only overwrite existing pixels.
-    // canvasCtx.globalCompositeOperation = 'source-in';
-    // canvasCtx.fillStyle = '#00FF00';
-    // canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
-
     // // // Only overwrite missing pixels.
     canvasCtx.globalCompositeOperation = 'destination-in';
     canvasCtx.drawImage(
@@ -54,6 +53,7 @@ function onResults(results) {
 
     // let cdata = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height)
     maskCtx.clearRect(0, 0, maskElement.width, maskElement.height);
+
     // console.log(cdata)
     for (let i = 0; i < STATE.backend.count; i++) {
         let col = Math.floor(STATE.backend.count / STATE.backend.row);
@@ -61,8 +61,37 @@ function onResults(results) {
         let sy = (Math.floor(i / col)) * ((canvasElement.height / STATE.backend.row) + STATE.backend.spaceY) + STATE.backend.offsetY;
         let swidth = STATE.backend.scale * canvasElement.width;
         let sheight = STATE.backend.scale * canvasElement.height;
-        maskCtx.drawImage(canvasElement, sx, sy,
-            swidth, sheight);
+        switch (step) {
+            case 1:
+                let sec = 3
+                let start = 100
+                let end = 1000
+                let currentTime = (new Date().getTime() - start_time) / 1000
+                let proccess = Easing.easeInOutBounce(currentTime,start, end, sec)
+                // currentTime, startValue, changeValue, duration
+                maskCtx.filter = `brightness(${proccess}%)`
+                maskCtx.drawImage(canvasElement, sx, sy, swidth, sheight);
+                let delay = 0.2
+                if (proccess >= end && !end_time) {
+                    end_time = new Date().getTime()
+                }
+                if (end_time && new Date().getTime() - end_time >= delay * 1000) {
+                    step = 2
+                    end_time = null
+                }
+                break;
+            case 2:
+
+                maskCtx.filter = `brightness(0%)`
+                maskCtx.drawImage(canvasElement, sx, sy,
+                    swidth, sheight);
+                break;
+            default:
+                maskCtx.filter = `brightness(100%)`
+                maskCtx.drawImage(canvasElement, sx, sy,
+                    swidth, sheight);   
+                break;
+        }
     }
 }
 function setMatrix() {
@@ -133,6 +162,8 @@ function setKey(){
         // Digit1 Digit2 KeyO
         switch (code) {
             case "Digit1":
+                step = 1;
+                start_time = new Date().getTime();
                 Object.keys(setting.default).map(key => {
                     setControllers(key, setting.default[key])
                 })
@@ -167,7 +198,6 @@ async function app() {
         modelSelection: 1,
     });
     selfieSegmentation.onResults(onResults);
-    
     const camera = new Camera(videoElement, {
         onFrame: async () => {
             await selfieSegmentation.send({image: videoElement});
